@@ -1,1 +1,44 @@
+version: '3.8'
+services:
+  mongo:
+    image: mongo:6
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data
+    ports:
+      - "9000:9000"
+
+  backend:
+    build: ./backend
+    env_file: ./env/backend.env
+    depends_on: [mongo, redis, minio]
+    ports:
+      - "8000:8000"
+
+  worker:
+    build: ./backend
+    env_file: ./env/backend.env
+    command: celery -A app.celery_app worker --loglevel=info
+    depends_on: [backend, redis, mongo]
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+
+volumes:
+  mongo_data:
 
