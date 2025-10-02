@@ -5,6 +5,7 @@ from app.tasks import process_reel_task
 import os
 from fastapi import APIRouter, Request
 from app.payments import verify_payment
+from app.apify import run_apify_scraper, wait_for_run, fetch_results
 
 router = APIRouter()
 
@@ -46,6 +47,22 @@ async def iamport_webhook(req: Request):
     # update subscription in DB: merchant_uid -> user mapping
     # mark subscription as active if status == 'paid'
     return {"status":"ok"}
+
+@app.get("/scrape/{hashtag}")
+async def scrape(hashtag: str):
+    run_id = run_apify_scraper(hashtag, results_limit=5)
+    wait_for_run(run_id)
+    results = fetch_results(run_id)
+
+    db = get_db_client()
+    for reel in results:
+        reel_id = reel.get("id") or reel.get("url")
+        if not reel_id:
+            continue
+        db.reels.update_one({"_id": reel_id}, {"$set": reel}, upsert=True)
+        process_reel_task.delay(reel)
+
+    return {"status": "done", "count": len(results)}
 
 
 
