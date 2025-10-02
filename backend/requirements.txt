@@ -1,1 +1,13 @@
+fastapi
+uvicorn[standard]
+pymongo[srv]
+boto3
+python-multipart
+celery[redis]
+redis
+requests
+pydantic
+pillow
+python-dotenv
+httpx
 
