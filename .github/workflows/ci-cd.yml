@@ -1,4 +1,4 @@
-name: CI/CD
+name: CI/CD Multi-Container App
 
 on:
   push:
@@ -7,19 +7,28 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
+      # 1️⃣ Récupérer le code
       - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
+
+      # 2️⃣ Installer Docker sur runner GitHub si besoin
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 3️⃣ Build backend image
       - name: Build backend image
-        run: |
-          docker build -t myorg/reels-backend:latest ./backend
+        run: docker build -t reels-backend:latest ./backend
+
+      # 4️⃣ Build frontend image
       - name: Build frontend image
-        run: |
-          docker build -t myorg/reels-frontend:latest ./frontend
-      # Optionally push images to registry (Docker Hub/GHCR) - credentials needed.
+        run: docker build -t reels-frontend:latest ./frontend
+
+      # 5️⃣ Build worker image (si séparée du backend)
+      - name: Build worker image
+        run: docker build -t reels-worker:latest ./backend
+
+      # 6️⃣ Déployer via SSH sur le VPS
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
         with:
@@ -28,7 +37,14 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /home/ubuntu/project-root
+            echo "Pull latest code"
             git pull origin main
-            docker-compose pull
-            docker-compose up -d --build
 
+            echo "Rebuild and restart all containers"
+            docker-compose up -d --build --force-recreate
+
+            echo "Clean dangling images (optional)"
+            docker system prune -f
+
+            echo "Show container status"
+            docker ps
