@@ -1,6 +1,14 @@
 /* src/index.css */
+
+/* Tailwind base, components et utilities */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Styles globaux */
 body {
   margin: 0;
   font-family: sans-serif;
+  background-color: #f0f0f0; /* optionnel, pour vérifier qu'on voit quelque chose */
 }
 
