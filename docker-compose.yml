@@ -23,14 +23,14 @@ services:
 
   backend:
     build: ./backend
-    env_file: ./env/backend.env
+    env_file: ./backend/env/backend.env
     depends_on: [mongo, redis, minio]
     ports:
       - "8000:8000"
 
   worker:
     build: ./backend
-    env_file: ./env/backend.env
+    env_file: ./backend/env/backend.env
     command: celery -A app.celery_app worker --loglevel=info
     depends_on: [backend, redis, mongo]
 
