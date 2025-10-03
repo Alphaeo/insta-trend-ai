@@ -28,7 +28,7 @@ export default function Feed() {
       <div className="mb-6">
         <h2 className="text-xl font-semibold">Top Hashtags (sample)</h2>
         <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={hashtags}>
+          <BarChart data={Array.isArray(hashtags) ? hashtags : []}>
             <XAxis dataKey="name" />
             <YAxis />
             <Tooltip />
