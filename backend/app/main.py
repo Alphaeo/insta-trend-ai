@@ -1,13 +1,9 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 from app.db import get_db_client
 from app.tasks import process_reel_task
-import os
-from fastapi import APIRouter, Request
 from app.payments import verify_payment
-from app.apify import run_apify_scraper, wait_for_run, fetch_results
-
-router = APIRouter()
+from app.apify import run_apify_scraper
 
 app = FastAPI(title="Reels Trend API")
 
@@ -24,7 +20,6 @@ class IngestPayload(BaseModel):
 async def ingest(payload: IngestPayload):
     db = get_db_client()
     db.reels.update_one({"_id": payload.reel_id}, {"$set": payload.dict()}, upsert=True)
-    # fires celery job
     process_reel_task.delay(payload.dict())
     return {"status": "queued", "reel_id": payload.reel_id}
 
@@ -36,7 +31,7 @@ def get_reel(reel_id: str):
         raise HTTPException(status_code=404, detail="not found")
     return doc
 
-@router.post("/payments/iamport/webhook")
+@app.post("/payments/iamport/webhook")
 async def iamport_webhook(req: Request):
     data = await req.json()
     imp_uid = data.get("imp_uid")
@@ -44,15 +39,17 @@ async def iamport_webhook(req: Request):
     if not imp_uid:
         raise HTTPException(status_code=400, detail="no imp_uid")
     info = verify_payment(imp_uid)
-    # update subscription in DB: merchant_uid -> user mapping
-    # mark subscription as active if status == 'paid'
     return {"status":"ok"}
 
 @app.get("/scrape/{hashtag}")
 async def scrape(hashtag: str):
-    run_id = run_apify_scraper(hashtag, results_limit=5)
-    wait_for_run(run_id)
-    results = fetch_results(run_id)
+    """
+    Scrape Reels for a hashtag via Apify, store them in MongoDB, and queue Celery tasks.
+    """
+    try:
+        results = run_apify_scraper(hashtag, results_limit=5)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Apify scraping failed: {e}")
 
     db = get_db_client()
     for reel in results:
@@ -63,6 +60,5 @@ async def scrape(hashtag: str):
         process_reel_task.delay(reel)
 
     return {"status": "done", "count": len(results)}
-
 
 
