@@ -1,5 +1,5 @@
 import os, httpx, time
-import request
+import requests
 APIFY_TOKEN = os.getenv("APIFY_TOKEN")
 ACTOR_ID = os.getenv("APIFY_ACTOR_ID")
 
