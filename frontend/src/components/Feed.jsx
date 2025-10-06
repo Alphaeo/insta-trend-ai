@@ -4,49 +4,74 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recha
 
 export default function Feed() {
   const [hashtags, setHashtags] = useState([]);
+  const [reels, setReels] = useState([]);
+  const hashtagToScrape = "kpop"; // tu peux changer ça dynamiquement si tu veux
 
   useEffect(() => {
-    async function fetchTop() {
-      // For MVP, backend endpoint could be /api/top_hashtags (not implemented in backend skeleton)
+    async function fetchReels() {
       try {
-        const res = await axios.get("/api/top_hashtags"); // proxy to backend:8000 in production
-        setHashtags(res.data);
+        // 1️⃣ Appeler l'endpoint de scraping
+        await axios.get(`/scrape/${hashtagToScrape}`);
+
+        // 2️⃣ Récupérer les Reels depuis MongoDB via ton endpoint existant
+        const res = await axios.get(`/reel`); // si tu veux récupérer tous les Reels, sinon adapte l'endpoint
+        const data = res.data;
+
+        // 3️⃣ Préparer les hashtags pour le graphique
+        const hashtagsData = data.reduce((acc, reel) => {
+          const tag = reel.hashtag || hashtagToScrape;
+          const existing = acc.find(h => h.name === tag);
+          if (existing) {
+            existing.value += reel.views || 0;
+          } else {
+            acc.push({ name: tag, value: reel.views || 0 });
+          }
+          return acc;
+        }, []);
+
+        setHashtags(hashtagsData);
+        setReels(data);
       } catch (e) {
-        // fallback: mock data
-        setHashtags([
-          { name: "dance", value: 120 },
-          { name: "kpop", value: 80 },
-          { name: "food", value: 60 }
-        ]);
+        console.error("Error fetching reels:", e);
       }
     }
-    fetchTop();
+
+    fetchReels();
   }, []);
 
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-semibold">Top Hashtags (sample)</h2>
+        <h2 className="text-xl font-semibold">Top Hashtags</h2>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={Array.isArray(hashtags) ? hashtags : []}>
             <XAxis dataKey="name" />
             <YAxis />
             <Tooltip />
-            <Bar dataKey="value" />
+            <Bar dataKey="value" fill="#4F46E5" />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       <div>
-        <h2 className="text-xl font-semibold mb-2">Feed (sample)</h2>
+        <h2 className="text-xl font-semibold mb-2">Feed</h2>
         <div className="grid grid-cols-1 gap-4">
-          <div className="p-4 border rounded">
-            <img src="https://via.placeholder.com/320x180" alt="thumb" />
-            <p className="mt-2">Sample Reel — #dance #viral</p>
-          </div>
+          {reels.length > 0 ? (
+            reels.map((reel, idx) => (
+              <div key={idx} className="p-4 border rounded">
+                <img src={reel.media_url} alt="thumb" />
+                <p className="mt-2">
+                  {reel.caption || "No caption"} — #{reel.hashtag || hashtagToScrape}
+                </p>
+              </div>
+            ))
+          ) : (
+            <p>No Reels available.</p>
+          )}
         </div>
       </div>
     </div>
   );
 }
+
 
