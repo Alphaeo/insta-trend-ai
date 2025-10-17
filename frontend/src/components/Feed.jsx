@@ -5,27 +5,20 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recha
 export default function Feed() {
   const [hashtags, setHashtags] = useState([]);
   const [reels, setReels] = useState([]);
-  const hashtagToScrape = "kpop"; // tu peux changer ça dynamiquement si tu veux
+  const hashtagToScrape = "kpop";
 
   useEffect(() => {
     async function fetchReels() {
       try {
-        // 1️⃣ Appeler l'endpoint de scraping
         await axios.get(`/scrape/${hashtagToScrape}`);
-
-        // 2️⃣ Récupérer les Reels depuis MongoDB via ton endpoint existant
-        const res = await axios.get(`/reel`); // si tu veux récupérer tous les Reels, sinon adapte l'endpoint
+        const res = await axios.get(`/reel`);
         const data = res.data;
 
-        // 3️⃣ Préparer les hashtags pour le graphique
         const hashtagsData = data.reduce((acc, reel) => {
           const tag = reel.hashtag || hashtagToScrape;
           const existing = acc.find(h => h.name === tag);
-          if (existing) {
-            existing.value += reel.views || 0;
-          } else {
-            acc.push({ name: tag, value: reel.views || 0 });
-          }
+          if (existing) existing.value += reel.views || 0;
+          else acc.push({ name: tag, value: reel.views || 0 });
           return acc;
         }, []);
 
@@ -35,43 +28,50 @@ export default function Feed() {
         console.error("Error fetching reels:", e);
       }
     }
-
     fetchReels();
   }, []);
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold">Top Hashtags</h2>
+      <div className="mb-8 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
+        <h2 className="text-lg font-semibold mb-4">Top Hashtags</h2>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={Array.isArray(hashtags) ? hashtags : []}>
             <XAxis dataKey="name" />
             <YAxis />
             <Tooltip />
-            <Bar dataKey="value" fill="#4F46E5" />
+            <Bar dataKey="value" fill="#6366F1" radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
-      <div>
-        <h2 className="text-xl font-semibold mb-2">Feed</h2>
-        <div className="grid grid-cols-1 gap-4">
-          {reels.length > 0 ? (
-            reels.map((reel, idx) => (
-              <div key={idx} className="p-4 border rounded">
-                <img src={reel.media_url} alt="thumb" />
-                <p className="mt-2">
-                  {reel.caption || "No caption"} — #{reel.hashtag || hashtagToScrape}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {reels.length > 0 ? (
+          reels.map((reel, idx) => (
+            <div
+              key={idx}
+              className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow hover:shadow-lg transition-shadow duration-200"
+            >
+              <img
+                src={reel.media_url}
+                alt="thumb"
+                className="w-full h-56 object-cover"
+              />
+              <div className="p-4">
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  {reel.caption || "No caption"} <br />
+                  <span className="text-indigo-500 font-medium">
+                    #{reel.hashtag || hashtagToScrape}
+                  </span>
                 </p>
               </div>
-            ))
-          ) : (
-            <p>No Reels available.</p>
-          )}
-        </div>
+            </div>
+          ))
+        ) : (
+          <p className="text-gray-500 dark:text-gray-400">No Reels available.</p>
+        )}
       </div>
     </div>
   );
 }
-
 
