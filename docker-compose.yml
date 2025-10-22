@@ -36,8 +36,13 @@ services:
 
   frontend:
     build: ./frontend
+    environment:
+      - VITE_API_URL=http://backend:8000  # ou http://localhost:8000 selon votre config
     ports:
-      - "3000:3000"
+      - "3000:80"  
+    depends_on:
+      - backend
+
 
 volumes:
   mongo_data:
