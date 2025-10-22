@@ -1,40 +1,56 @@
-/* src/index.css */
-
-/* Tailwind base, components et utilities */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Custom root variables and dark-mode preference */
-:root{
-  --bg: #f0f2f5;
-  --card: #ffffff;
-  --text: #0f172a;
-}
-.dark {
-  --bg: #0b1220;
-  --card: #0b1220;
-  --text: #e6eef8;
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 328 85% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 217 91% 60%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 220 13% 95%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 280 85% 65%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 328 85% 60%;
+
+    --radius: 1.5rem;
+
+    /* Custom gradients */
+    --gradient-header: linear-gradient(90deg, hsl(328, 85%, 60%) 0%, hsl(280, 85%, 65%) 50%, hsl(217, 91%, 60%) 100%);
+    --gradient-active: linear-gradient(135deg, hsl(328, 85%, 60%) 0%, hsl(280, 85%, 65%) 100%);
+    --gradient-hero-overlay: linear-gradient(90deg, hsl(328, 85%, 40%) 0%, hsl(280, 85%, 45%) 50%, hsl(217, 91%, 45%) 100%);
+  }
 }
 
-html,body,#root {
-  height: 100%;
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
 }
-
-body {
-  margin: 0;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  background-color: var(--bg);
-  color: var(--text);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* small UI helpers */
-.card {
-  background: var(--card);
-  border-radius: 14px;
-  box-shadow: 0 6px 18px rgba(12,18,39,0.06);
-}
-
-
