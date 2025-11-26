@@ -5,6 +5,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 type View = "profile" | "billing" | "accounts" | "settings";
 
@@ -12,8 +14,15 @@ export default function ProfilePopover() {
   const [view, setView] = useState<View>("profile");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  const { user, logout, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   const resetView = () => setView("profile");
+
+  const handleLogout = () => {
+    logout();
+    navigate("/auth");
+  };
 
   return (
     <Popover onOpenChange={(open) => !open && resetView()}>
@@ -39,11 +48,17 @@ export default function ProfilePopover() {
                 <div className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 rounded-full border-4 border-white" />
               </div>
               <div className="flex-1">
-                <h3 className="text-xl font-bold text-foreground">@creative_creator</h3>
-                <p className="text-muted-foreground">sarah.creator@email.com</p>
+                <h3 className="text-xl font-bold text-foreground">
+                  {user ? user.full_name : "Guest User"}
+                </h3>
+                <p className="text-muted-foreground">
+                  {user ? user.email : "Not logged in"}
+                </p>
                 <div className="flex items-center gap-2 mt-2">
                   <Crown className="w-4 h-4 text-amber-500" />
-                  <span className="text-amber-600 font-medium">Pro Member</span>
+                  <span className="text-amber-600 font-medium">
+                    {user?.role === "admin" ? "Admin" : "Member"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -338,6 +353,7 @@ export default function ProfilePopover() {
               <Button
                 variant="outline"
                 className="w-full rounded-full border-red-200 bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center gap-2"
+                onClick={handleLogout}
               >
                 <LogOut className="w-4 h-4" />
                 Log Out

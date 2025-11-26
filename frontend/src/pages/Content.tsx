@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sparkles, FileText, Image, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import api from "@/lib/api";
 
 const agents = [
   {
@@ -43,6 +46,51 @@ const agents = [
 
 export default function Content() {
   const [selectedAgent, setSelectedAgent] = useState(agents[0]);
+  const [drafts, setDrafts] = useState<any[]>([]);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftContent, setDraftContent] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const fetchDrafts = async () => {
+    try {
+      const res = await api.get("/drafts");
+      setDrafts(res.data.items || []);
+    } catch (e) {
+      console.error("Failed to fetch drafts", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchDrafts();
+  }, []);
+
+  const saveDraft = async () => {
+    if (!draftTitle.trim() && !draftContent.trim()) return;
+    setSaving(true);
+    try {
+      await api.post("/drafts", {
+        title: draftTitle,
+        content: draftContent,
+        agent_id: selectedAgent.id,
+      });
+      setDraftTitle("");
+      setDraftContent("");
+      fetchDrafts();
+    } catch (e: any) {
+      alert(e?.response?.data?.detail || "Failed to save draft");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteDraft = async (id: string) => {
+    try {
+      await api.delete(`/drafts/${id}`);
+      fetchDrafts();
+    } catch (e) {
+      alert("Failed to delete draft");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -92,7 +140,7 @@ export default function Content() {
             </div>
           </div>
 
-          {/* Right Side - Agent Details */}
+          {/* Right Side - Agent Details + Drafts */}
           <div className="space-y-6">
             <div className="bg-card border border-border rounded-3xl p-8">
               <div className="flex items-center gap-4 mb-6">
@@ -129,6 +177,56 @@ export default function Content() {
 
               <div className="mt-8 p-6 bg-muted/50 rounded-2xl">
                 <p className="text-foreground text-lg">{selectedAgent.greeting}</p>
+              </div>
+            </div>
+
+            {/* Drafts */}
+            <div className="bg-card border border-border rounded-3xl p-8">
+              <h3 className="text-xl font-semibold text-foreground mb-4">Drafts</h3>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Input
+                    placeholder="Draft title"
+                    value={draftTitle}
+                    onChange={(e) => setDraftTitle(e.target.value)}
+                  />
+                  <Textarea
+                    rows={6}
+                    placeholder="Write your idea..."
+                    value={draftContent}
+                    onChange={(e) => setDraftContent(e.target.value)}
+                  />
+                  <Button
+                    onClick={saveDraft}
+                    disabled={saving || drafts.length >= 5}
+                    className="rounded-full"
+                  >
+                    {drafts.length >= 5 ? "Limit reached (5)" : saving ? "Saving..." : "Save draft"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">Max 5 drafts per user.</p>
+                </div>
+                <div className="space-y-3">
+                  {drafts.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No drafts yet.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {drafts.map((d) => (
+                        <div key={d._id} className="p-4 border border-border rounded-2xl">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="font-medium text-foreground">{d.title || "Untitled"}</p>
+                              <p className="text-xs text-muted-foreground">{new Date(d.updated_at).toLocaleString()}</p>
+                            </div>
+                            <Button size="sm" variant="destructive" onClick={() => deleteDraft(d._id)}>Delete</Button>
+                          </div>
+                          {d.content && (
+                            <p className="text-sm text-muted-foreground mt-2 line-clamp-3">{d.content}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

@@ -1,18 +1,48 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { TrendingUp, FileText, Info, Building2, Menu, HelpCircle, Settings } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { TrendingUp, FileText, Info, Building2, Menu, HelpCircle, Settings, LayoutDashboard, MessageCircle, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProfilePopover from "@/components/ProfilePopover";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "@/contexts/I18nContext";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger, 
+  DropdownMenuSeparator 
+} from "@/components/ui/dropdown-menu";
 
-const navItems = [
-  { path: "/", label: "Trends", icon: TrendingUp },
-  { path: "/content", label: "Content", icon: FileText },
-  { path: "/info", label: "Info", icon: Info },
-  { path: "/agency", label: "Agency", icon: Building2 },
+// Navigation items - Main navigation (shown in the main bar)
+const mainNavItems = [
+  { path: "/trends", label: "Trends", icon: TrendingUp, requireAdmin: false },
+  { path: "/content", label: "Content", icon: FileText, requireAdmin: false },
+  { path: "/info", label: "Info", icon: Info, requireAdmin: false },
+  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard, requireAdmin: false },
+  { path: "/admin", label: "Admin", icon: Shield, requireAdmin: true },
+];
+
+// Additional menu items (shown in the dropdown menu)
+const extraMenuItems = [
+  { path: "/agency", label: "Agency", icon: Building2, requireAdmin: false },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated, isAdmin } = useAuth();
+  
+  // Filter navigation items based on user role
+  const navItems = mainNavItems.filter(item => !item.requireAdmin || (item.requireAdmin && isAdmin));
+  const filteredExtraItems = extraMenuItems.filter(item => !item.requireAdmin || (item.requireAdmin && isAdmin));
+
+  const handleNavClick = (path: string) => {
+    if (!isAuthenticated) {
+      navigate("/auth");
+      return;
+    }
+    navigate(path);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -28,7 +58,54 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <p className="text-white/90 text-sm">AI Social Media Personal Manager</p>
             </div>
           </div>
-          <ProfilePopover />
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <ProfilePopover />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="text-white hover:bg-white/20 rounded-full"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {/* Main app links */}
+                <DropdownMenuItem onClick={() => handleNavClick("/chat")}>
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Chat
+                </DropdownMenuItem>
+                
+                {/* Extra menu items */}
+                {filteredExtraItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <DropdownMenuItem 
+                      key={item.path}
+                      onClick={() => handleNavClick(item.path)}
+                    >
+                      <Icon className="h-4 w-4 mr-2" />
+                      {item.label}
+                    </DropdownMenuItem>
+                  );
+                })}
+                
+                <DropdownMenuSeparator />
+                
+                {/* Settings and help */}
+                <DropdownMenuItem onClick={() => handleNavClick("/settings")}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleNavClick("/help")}>
+                  <HelpCircle className="h-4 w-4 mr-2" />
+                  Help
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
 
@@ -41,48 +118,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 const isActive = location.pathname === item.path;
                 const Icon = item.icon;
                 return (
-                  <Link key={item.path} to={item.path}>
-                    <Button
-                      variant={isActive ? "default" : "ghost"}
-                      className={`rounded-full px-6 py-6 transition-all ${
-                        isActive
-                          ? "bg-gradient-to-r from-[#EC4899] to-[#A855F7] text-white hover:opacity-90"
-                          : "text-muted-foreground hover:bg-muted"
-                      }`}
-                    >
-                      <Icon className="h-4 w-4 mr-2" />
-                      {item.label}
-                    </Button>
-                  </Link>
+                  <Button
+                    key={item.path}
+                    variant={isActive ? "default" : "ghost"}
+                    className={`rounded-full px-6 py-6 transition-all ${
+                      isActive
+                        ? "bg-gradient-to-r from-[#EC4899] to-[#A855F7] text-white hover:opacity-90"
+                        : "text-muted-foreground hover:bg-muted"
+                    }`}
+                    onClick={() => handleNavClick(item.path)}
+                  >
+                    <Icon className="h-4 w-4 mr-2" />
+                    {item.label}
+                  </Button>
                 );
               })}
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                size="icon"
-                variant="ghost"
-                className="rounded-full bg-gradient-to-br from-primary to-accent text-white hover:opacity-90"
-                onClick={() => navigate("/dashboard")}
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-              <Button 
-                size="icon" 
-                variant="ghost" 
-                className="rounded-full"
-                onClick={() => navigate("/help")}
-              >
-                <HelpCircle className="h-5 w-5" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="rounded-full hover:bg-gradient-to-br hover:from-primary hover:to-accent"
-                onClick={() => navigate("/settings")}
-              >
-                <Settings className="h-5 w-5" />
-              </Button>
-            </div>
+            <div className="flex items-center gap-2" />
           </div>
         </div>
       </nav>
